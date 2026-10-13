@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maratón UCM</title>
+<meta name="description" content="Todo el Universo Cinematográfico de Marvel en orden cronológico, con animaciones y casillas para marcar lo que has visto.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Concepto: sala de cine a oscuras. Una línea de tiempo vertical de fichas con emblemas animados propios, una por título, coloreadas por saga. */
+:root{
+  --bg:#0b0d1c; --bg2:#12152b; --card:#161a33; --card2:#1d2242; --fg:#eef0fb; --muted:#9aa0c4; --dim:#5d6490; --line:#2a2f57;
+  --orig:#f2b134; --inf:#ef5346; --mul:#9a6bff; --hoy:#1fd1bd; --ext:#ff7ac8; --warn:#f6bf4a;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f4f5fb; --bg2:#e9ebf7; --card:#ffffff; --card2:#f0f1fa; --fg:#14172e; --muted:#555b84; --dim:#8a90b4; --line:#d6d9ee;
+    --orig:#b9770e; --inf:#c8372c; --mul:#6a3fd1; --hoy:#0b8f82; --ext:#b4287f; --warn:#a86a00; color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f4f5fb; --bg2:#e9ebf7; --card:#ffffff; --card2:#f0f1fa; --fg:#14172e; --muted:#555b84; --dim:#8a90b4; --line:#d6d9ee;
+  --orig:#b9770e; --inf:#c8372c; --mul:#6a3fd1; --hoy:#0b8f82; --ext:#b4287f; --warn:#a86a00; color-scheme:light;
+}
+:root[data-theme="dark"]{ color-scheme:dark; }
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;overflow-x:clip;background:var(--bg);color:var(--fg);font:16px/1.5 var(--body);padding-inline:max(16px,env(safe-area-inset-left));-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+.wrap{max-width:1180px;margin-inline:auto}
+:focus-visible{outline:3px solid var(--hoy);outline-offset:2px;border-radius:6px}
+
+/* barra de progreso de scroll */
+#scrollbar{position:fixed;inset:0 0 auto 0;height:3px;z-index:50;background:linear-gradient(90deg,var(--orig),var(--inf),var(--mul),var(--hoy));transform-origin:0 50%;transform:scaleX(0)}
+
+/* hero */
+.hero{position:relative;padding-block:56px 40px;isolation:isolate;overflow:hidden;margin-inline:calc(50% - 50vw);padding-inline:max(16px,calc(50vw - 590px))}
+#bg{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+.hero-grid{display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.eyebrow{font:600 12px/1 var(--body);letter-spacing:.22em;text-transform:uppercase;color:var(--hoy);margin:0 0 14px}
+h1{font:900 clamp(56px,11vw,128px)/.88 var(--display);letter-spacing:.01em;margin:0;text-transform:uppercase;text-wrap:balance}
+h1 span{display:inline-block;background:linear-gradient(95deg,var(--orig),var(--inf) 35%,var(--mul) 70%,var(--hoy));-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% 100%;animation:sheen 8s linear infinite}
+@keyframes sheen{to{background-position:200% 0}}
+.lead{max-width:52ch;color:var(--muted);font-size:18px;margin:18px 0 0}
+.ring{position:relative;width:190px;height:190px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .trk{stroke:var(--line)}
+.ring .bar{stroke:url(#grad);transition:stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)}
+.ring .mid{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .pct{font:900 54px/1 var(--display);font-variant-numeric:tabular-nums}
+.ring .sub{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.stat{background:color-mix(in srgb,var(--card) 80%,transparent);border:1px solid var(--line);border-radius:14px;padding:12px 18px;min-width:120px;backdrop-filter:blur(6px)}
+.stat b{display:block;font:800 34px/1 var(--display);font-variant-numeric:tabular-nums}
+.stat small{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+
+/* barra de herramientas */
+.tools{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin-inline:calc(50% - 50vw);padding:10px max(16px,calc(50vw - 590px));padding-top:max(10px,env(safe-area-inset-top))}
+.tools-in{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search{flex:1 1 220px;min-width:0;position:relative}
+.search input{width:100%;background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:11px 14px 11px 40px;font:inherit}
+.search svg{position:absolute;left:13px;top:50%;translate:0 -50%;width:18px;height:18px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:600;color:var(--muted);transition:.2s}
+.chip:hover{color:var(--fg);border-color:var(--dim)}
+.chip[aria-pressed="true"]{color:var(--bg);background:var(--fg);border-color:var(--fg)}
+.chip i{font-style:normal;opacity:.65;font-variant-numeric:tabular-nums;margin-left:4px}
+.era-chip[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#0b0d1c}
+.iconbtn{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+.iconbtn:hover{color:var(--fg)}
+.iconbtn svg{width:18px;height:18px}
+
+/* secciones */
+main{padding-block:32px 120px}
+.era{margin-top:56px;--c:var(--orig)}
+.era[data-era="inf"]{--c:var(--inf)} .era[data-era="mul"]{--c:var(--mul)} .era[data-era="hoy"]{--c:var(--hoy)} .era[data-era="ext"]{--c:var(--ext)}
+.era-head{display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:end;padding-bottom:16px;border-bottom:2px solid var(--c);margin-bottom:24px}
+.era-head h2{font:900 clamp(34px,5vw,56px)/.95 var(--display);margin:0;text-transform:uppercase;color:var(--c)}
+.era-head p{margin:6px 0 0;color:var(--muted)}
+.era-ctrl{display:flex;gap:10px;align-items:center}
+.mini{background:transparent;border:1px solid var(--c);color:var(--c);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;transition:.2s}
+.mini:hover{background:var(--c);color:#0b0d1c}
+.ebar{grid-column:1/-1;height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.ebar i{display:block;height:100%;width:0;background:var(--c);border-radius:99px;transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:18px;perspective:1100px}
+
+/* ficha */
+.card{--c:var(--orig);position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0;
+  transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .25s ease-out,border-color .3s,box-shadow .3s,background .3s;
+  animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:min(calc(var(--k,0)*45ms),700ms);will-change:transform}
+.era[data-era="inf"] .card{--c:var(--inf)} .era[data-era="mul"] .card{--c:var(--mul)} .era[data-era="hoy"] .card{--c:var(--hoy)} .era[data-era="ext"] .card{--c:var(--ext)}
+@keyframes rise{from{opacity:0;translate:0 26px;scale:.97}to{opacity:1;translate:0 0;scale:1}}
+.card:hover{border-color:color-mix(in srgb,var(--c) 70%,var(--line));box-shadow:0 18px 40px -18px color-mix(in srgb,var(--c) 60%,transparent)}
+.card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--c) 18%,transparent),transparent 60%);opacity:0;transition:opacity .3s}
+.card:hover::after{opacity:1}
+.card.seen{background:linear-gradient(160deg,color-mix(in srgb,var(--c) 14%,var(--card)),var(--card) 60%);border-color:color-mix(in srgb,var(--c) 55%,var(--line))}
+.card.ping{animation:ping 1.4s ease-out 2}
+@keyframes ping{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 70%,transparent)}50%{box-shadow:0 0 0 14px transparent}}
+.top{display:flex;gap:14px;align-items:center}
+.num{position:absolute;top:12px;right:16px;font:900 46px/1 var(--display);color:color-mix(in srgb,var(--c) 28%,transparent);font-variant-numeric:tabular-nums;pointer-events:none}
+.emb{width:84px;height:84px;flex:none;color:var(--c);filter:hue-rotate(var(--hr,0deg)) drop-shadow(0 0 8px color-mix(in srgb,var(--c) 50%,transparent));opacity:.8;transition:opacity .3s,transform .4s}
+.emb *{transform-box:view-box;transform-origin:50px 50px}
+.card:hover .emb,.card.seen .emb{opacity:1}
+.card:hover .emb{transform:scale(1.08)}
+.card.seen .emb{animation:pop .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+.sp{animation:spin var(--d,8s) linear infinite}
+.rv{animation:spin calc(var(--d,8s)*1.5) linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pl{animation:pulse 3.2s ease-out infinite;opacity:0}
+.pl:nth-of-type(2){animation-delay:1s}.pl:nth-of-type(3){animation-delay:2s}
+@keyframes pulse{0%{transform:scale(.15);opacity:.9}100%{transform:scale(1.1);opacity:0}}
+.bt{animation:beat 1.8s ease-in-out infinite}
+@keyframes beat{50%{transform:scale(1.35)}}
+.dash{stroke-dasharray:7 9;animation:dash 2.4s linear infinite}
+.dash:nth-of-type(2){animation-duration:3.4s;animation-direction:reverse}
+@keyframes dash{to{stroke-dashoffset:-64}}
+.ttl{min-width:0;padding-right:44px}
+.tag{display:flex;align-items:center;gap:6px;font:700 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--c);margin-bottom:6px;flex-wrap:wrap}
+.tag .up{background:var(--c);color:#0b0d1c;border-radius:6px;padding:3px 6px}
+h3{font:800 24px/1.02 var(--display);letter-spacing:.01em;margin:0;text-wrap:balance;overflow-wrap:anywhere}
+dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;font-size:13.5px}
+dt{color:var(--dim)}
+dd{margin:0;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.note{margin:0;font-size:14.5px;color:var(--fg);opacity:.92}
+.flag{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--warn);font-weight:600}
+.flag svg{width:12px;height:12px}
+.watch{margin-top:auto;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--c);background:transparent;color:var(--c);font-weight:700;position:relative;overflow:hidden;transition:background .25s,color .25s,transform .1s}
+.watch:hover{background:color-mix(in srgb,var(--c) 16%,transparent)}
+.watch:active{transform:scale(.98)}
+.watch[aria-pressed="true"]{background:var(--c);color:#0b0d1c}
+.watch svg{width:20px;height:20px}
+.watch .tick{stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .4s .05s}
+.watch[aria-pressed="true"] .tick{stroke-dashoffset:0}
+.watch .rip{position:absolute;border-radius:50%;background:currentColor;opacity:.25;pointer-events:none;translate:-50% -50%;animation:rip .6s ease-out forwards}
+@keyframes rip{from{width:0;height:0}to{width:320px;height:320px;opacity:0}}
+.empty{display:none;text-align:center;color:var(--muted);padding:70px 0}
+.empty.on{display:block}
+
+/* pie y flotantes */
+footer{border-top:1px solid var(--line);padding-block:32px 60px;color:var(--muted);font-size:14px}
+footer p{max-width:72ch;margin:0 0 8px}
+.dock{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:45;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.next{display:flex;align-items:center;gap:10px;background:var(--fg);color:var(--bg);border:0;border-radius:999px;padding:14px 20px;font-weight:700;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);transition:transform .2s}
+.next:hover{transform:translateY(-3px)}
+.next svg{width:18px;height:18px}
+#toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));translate:-50% 20px;opacity:0;pointer-events:none;background:var(--card2);border:1px solid var(--line);padding:12px 20px;border-radius:12px;z-index:60;transition:.3s;max-width:calc(100% - 32px);text-align:center}
+#toast.on{opacity:1;translate:-50% 0}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:70}
+
+@media (max-width:760px){
+  .hero{padding-block:36px 28px}
+  .hero-grid{grid-template-columns:1fr}
+  .ring{width:150px;height:150px}.ring .pct{font-size:42px}
+  .era-head{grid-template-columns:1fr}
+  .next span{display:none}.next{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+<div id="scrollbar"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<header class="hero">
+  <canvas id="bg" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Orden cronológico · Películas, series y especiales</p>
+        <h1><span>Maratón<br>UCM</span></h1>
+        <p class="lead">Todo el Universo Cinematográfico de Marvel en el orden en que ocurre la historia. Marca lo que ya has visto y la web te guarda el progreso.</p>
+        <div class="stats">
+          <div class="stat"><b id="sSeen">0</b><small>Vistos</small></div>
+          <div class="stat"><b id="sLeft">0</b><small>Pendientes</small></div>
+          <div class="stat"><b id="sTotal">0</b><small>Títulos</small></div>
+        </div>
+      </div>
+      <div class="ring" role="img" aria-label="Progreso total">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2b134"/><stop offset=".4" stop-color="#ef5346"/><stop offset=".75" stop-color="#9a6bff"/><stop offset="1" stop-color="#1fd1bd"/></linearGradient></defs>
+          <circle class="trk" cx="60" cy="60" r="54" fill="none" stroke-width="9"/>
+          <circle class="bar" id="ringBar" cx="60" cy="60" r="54" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="339.29"/>
+        </svg>
+        <div class="mid"><div class="pct"><span id="pct">0</span>%</div><div class="sub">completado</div></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="tools">
+  <div class="wrap tools-in">
+    <label class="search"><span class="sr" hidden>Buscar</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Buscar título…  (pulsa /)" autocomplete="off">
+    </label>
+    <div class="chips" id="fStatus" role="group" aria-label="Estado">
+      <button class="chip" data-v="all" aria-pressed="true">Todo<i id="cAll"></i></button>
+      <button class="chip" data-v="left" aria-pressed="false">Pendientes<i id="cLeft"></i></button>
+      <button class="chip" data-v="seen" aria-pressed="false">Vistos<i id="cSeen"></i></button>
+    </div>
+    <div class="chips" id="fKind" role="group" aria-label="Tipo">
+      <button class="chip" data-v="all" aria-pressed="true">Todos los tipos</button>
+      <button class="chip" data-v="Película" aria-pressed="false">Películas</button>
+      <button class="chip" data-v="serie" aria-pressed="false">Series y especiales</button>
+    </div>
+    <div class="chips" id="fEra" role="group" aria-label="Saga"></div>
+    <button class="iconbtn" id="theme" title="Cambiar tema" aria-label="Cambiar tema"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+    <button class="iconbtn" id="exp" title="Exportar progreso" aria-label="Exportar progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></button>
+    <button class="iconbtn" id="imp" title="Importar progreso" aria-label="Importar progreso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg></button>
+    <button class="chip" id="reset">Reiniciar</button>
+    <input type="file" id="file" accept="application/json" hidden>
+  </div>
+</div>
+
+<main class="wrap" id="main">
+  <div class="empty" id="empty"><h3>No hay nada con esos filtros</h3><p>Prueba a quitar la búsqueda o cambiar de saga.</p></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><b>Guía de fans no oficial.</b> Sin imágenes oficiales ni logotipos: los emblemas animados son ilustraciones propias, una por título. La última saga reúne películas que no son del UCM oficial.</p>
+    <p>El orden interno de los títulos marcados como «orientativo» varía según la guía. Los estrenos de 2026 se contrastaron con prensa a 13 de octubre de 2026; Avengers: Doomsday y Secret Wars aún no se han estrenado.</p>
+    <p>Tu progreso se guarda en este navegador. Para llevarlo a otro dispositivo usa Exportar e Importar.</p>
+  </div>
+</footer>
+
+<div class="dock">
+  <button class="next" id="next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Siguiente por ver</span></button>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = {"eras": {"orig": {"name": "ORÍGENES", "sub": "Del pasado remoto a los años 90"}, "inf": {"name": "SAGA DEL INFINITO", "sub": "Hierro, escudos, gemas y el chasquido (2010 - 2023)"}, "mul": {"name": "SAGA DEL MULTIVERSO", "sub": "Tras el Blip: nuevas caras y realidades (2023 en adelante)"}, "hoy": {"name": "AHORA Y LO QUE VIENE", "sub": "Estrenos de 2026 y el camino a Doomsday / Secret Wars"}, "ext": {"name": "FUERA DEL UCM, PERO CONECTADAS", "sub": "X-Men de Fox y otros Spider-Man. Opcionales: solo se cruzan con el UCM en Deadpool y Lobezno y en No Way Home."}}, "items": [{"id": 1, "era": "orig", "title": "Eyes of Wakanda", "kind": "Serie animada", "when": "Historia antigua de Wakanda", "rel": "2025", "meta": "Disney+", "note": "Serie animada sobre el pasado de Wakanda. Algunas guías la ponen la primera por ambientación, pero es opcional y se puede ver al final.", "flag": true, "up": false}, {"id": 2, "era": "orig", "title": "Capitán América: El primer vengador", "kind": "Película", "when": "~1940-1945", "rel": "2011", "meta": "Dir.: Joe Johnston", "note": "Steve Rogers en plena Segunda Guerra Mundial. Aparece el Teseracto, pieza clave de toda la saga.", "flag": false, "up": false}, {"id": 3, "era": "orig", "title": "Agent Carter", "kind": "Serie", "when": "~1946-1947", "rel": "2015-2016", "meta": "2 temporadas", "note": "Peggy Carter en la posguerra y los orígenes de S.H.I.E.L.D. Opcional, pero muy recomendable.", "flag": false, "up": false}, {"id": 4, "era": "orig", "title": "Capitana Marvel", "kind": "Película", "when": "1995", "rel": "2019", "meta": "Dir.: Anna Boden y Ryan Fleck", "note": "Carol Danvers, primer contacto con Nick Fury y con los skrulls. Se estrenó en 2019 pero ocurre décadas antes.", "flag": false, "up": false}, {"id": 5, "era": "inf", "title": "Iron Man", "kind": "Película", "when": "~2010", "rel": "2008", "meta": "Dir.: Jon Favreau", "note": "Nace Tony Stark como héroe y arranca todo el UCM. Escena post-créditos importante.", "flag": false, "up": false}, {"id": 6, "era": "inf", "title": "Iron Man 2", "kind": "Película", "when": "~2011", "rel": "2010", "meta": "Dir.: Jon Favreau", "note": "Tony y su legado. Presenta a Viuda Negra y a Rhodey como War Machine.", "flag": false, "up": false}, {"id": 7, "era": "inf", "title": "El increíble Hulk", "kind": "Película", "when": "~2011", "rel": "2008", "meta": "Dir.: Louis Leterrier", "note": "Bruce Banner huyendo. La más aislada de la saga; basta con saber que existe.", "flag": true, "up": false}, {"id": 8, "era": "inf", "title": "Thor", "kind": "Película", "when": "~2011", "rel": "2011", "meta": "Dir.: Kenneth Branagh", "note": "Presenta a Asgard, a Thor y a Loki.", "flag": false, "up": false}, {"id": 9, "era": "inf", "title": "Los Vengadores", "kind": "Película", "when": "2012", "rel": "2012", "meta": "Dir.: Joss Whedon", "note": "Primera reunión de los héroes y la batalla de Nueva York.", "flag": false, "up": false}, {"id": 10, "era": "inf", "title": "Iron Man 3", "kind": "Película", "when": "Navidad de 2012", "rel": "2013", "meta": "Dir.: Shane Black", "note": "Tony tras lo de Nueva York. Por su fecha interna, algunas guías la ponen antes de Thor 2.", "flag": true, "up": false}, {"id": 11, "era": "inf", "title": "Thor: El mundo oscuro", "kind": "Película", "when": "~2013", "rel": "2013", "meta": "Dir.: Alan Taylor", "note": "Los Nueve Reinos y el Éter, una de las Gemas del Infinito.", "flag": false, "up": false}, {"id": 12, "era": "inf", "title": "Capitán América: El soldado de invierno", "kind": "Película", "when": "~2014", "rel": "2014", "meta": "Dir.: Anthony y Joe Russo", "note": "Thriller de espías que cambia para siempre a S.H.I.E.L.D.", "flag": false, "up": false}, {"id": 13, "era": "inf", "title": "Guardianes de la Galaxia", "kind": "Película", "when": "~2014", "rel": "2014", "meta": "Dir.: James Gunn", "note": "El equipo cósmico y la Gema del Poder.", "flag": false, "up": false}, {"id": 14, "era": "inf", "title": "Guardianes de la Galaxia Vol. 2", "kind": "Película", "when": "~2014", "rel": "2017", "meta": "Dir.: James Gunn", "note": "Más sobre la familia de los Guardianes y el origen de Peter Quill.", "flag": false, "up": false}, {"id": 15, "era": "inf", "title": "Vengadores: La era de Ultron", "kind": "Película", "when": "~2015", "rel": "2015", "meta": "Dir.: Joss Whedon", "note": "Aparecen Ultron, Visión y los gemelos Maximoff.", "flag": false, "up": false}, {"id": 16, "era": "inf", "title": "Ant-Man", "kind": "Película", "when": "~2015", "rel": "2015", "meta": "Dir.: Peyton Reed", "note": "Scott Lang y el reino cuántico, con tono ligero de atracos.", "flag": false, "up": false}, {"id": 17, "era": "inf", "title": "Capitán América: Civil War", "kind": "Película", "when": "2016", "rel": "2016", "meta": "Dir.: Anthony y Joe Russo", "note": "Los héroes se dividen. Debutan Spider-Man y Pantera Negra.", "flag": false, "up": false}, {"id": 18, "era": "inf", "title": "Viuda Negra", "kind": "Película", "when": "2016 (tras Civil War)", "rel": "2021", "meta": "Dir.: Cate Shortland", "note": "Natasha Romanoff entre Civil War e Infinity War. Estrenada en 2021.", "flag": false, "up": false}, {"id": 19, "era": "inf", "title": "Black Panther", "kind": "Película", "when": "2016", "rel": "2018", "meta": "Dir.: Ryan Coogler", "note": "T'Challa como rey de Wakanda.", "flag": false, "up": false}, {"id": 20, "era": "inf", "title": "Spider-Man: Homecoming", "kind": "Película", "when": "~2016", "rel": "2017", "meta": "Dir.: Jon Watts", "note": "Peter Parker bajo la tutela de Tony Stark.", "flag": false, "up": false}, {"id": 21, "era": "inf", "title": "Doctor Strange (Doctor Extraño)", "kind": "Película", "when": "~2016-2017", "rel": "2016", "meta": "Dir.: Scott Derrickson", "note": "Magia, Kamar-Taj y la Gema del Tiempo.", "flag": false, "up": false}, {"id": 22, "era": "inf", "title": "Thor: Ragnarok", "kind": "Película", "when": "~2017", "rel": "2017", "meta": "Dir.: Taika Waititi", "note": "Humor cósmico; Thor y Hulk en Sakaar.", "flag": false, "up": false}, {"id": 23, "era": "inf", "title": "Ant-Man y la Avispa", "kind": "Película", "when": "2018", "rel": "2018", "meta": "Dir.: Peyton Reed", "note": "Secuela de Ant-Man. Ocurre en paralelo a los hechos de Infinity War.", "flag": false, "up": false}, {"id": 24, "era": "inf", "title": "Vengadores: Infinity War", "kind": "Película", "when": "2018", "rel": "2018", "meta": "Dir.: Anthony y Joe Russo", "note": "Thanos reúne las Gemas. Empieza el principio del fin.", "flag": false, "up": false}, {"id": 25, "era": "inf", "title": "Vengadores: Endgame", "kind": "Película", "when": "2018 / 2023", "rel": "2019", "meta": "Dir.: Anthony y Joe Russo", "note": "Cierre de la Saga del Infinito. Después, el UCM ya no es el mismo.", "flag": false, "up": false}, {"id": 26, "era": "mul", "title": "WandaVision", "kind": "Serie", "when": "2023", "rel": "2021", "meta": "1 temporada", "note": "Primera serie de Disney+. Imprescindible antes de Doctor Strange en el multiverso de la locura.", "flag": false, "up": false}, {"id": 27, "era": "mul", "title": "Loki (temporada 1)", "kind": "Serie", "when": "Fuera del tiempo", "rel": "2021", "meta": "1 temporada", "note": "La AVT y las variantes. Punto de partida del Multiverso; su ubicación temporal es especial.", "flag": true, "up": false}, {"id": 28, "era": "mul", "title": "Falcon y el Soldado de Invierno", "kind": "Serie", "when": "2024", "rel": "2021", "meta": "1 temporada", "note": "Sam y Bucky tras Endgame, y el futuro del escudo.", "flag": false, "up": false}, {"id": 29, "era": "mul", "title": "Shang-Chi y la leyenda de los Diez Anillos", "kind": "Película", "when": "~2024", "rel": "2021", "meta": "Dir.: Destin Daniel Cretton", "note": "Artes marciales y los Diez Anillos. Tiene flashbacks hasta 2018.", "flag": true, "up": false}, {"id": 30, "era": "mul", "title": "Eternals", "kind": "Película", "when": "~2024 (con flashbacks desde 5000 a.C.)", "rel": "2021", "meta": "Dir.: Chloé Zhao", "note": "Inmortales en la Tierra durante milenios. Su colocación varía según la guía.", "flag": true, "up": false}, {"id": 31, "era": "mul", "title": "Spider-Man: Lejos de casa", "kind": "Película", "when": "2024", "rel": "2019", "meta": "Dir.: Jon Watts", "note": "Peter Parker tras el Blip. Aparece Mysterio.", "flag": false, "up": false}, {"id": 32, "era": "mul", "title": "Spider-Man: No Way Home", "kind": "Película", "when": "~2024", "rel": "2021", "meta": "Dir.: Jon Watts", "note": "Abre el Multiverso con otros Spider-Man. Imprescindible.", "flag": false, "up": false}, {"id": 33, "era": "mul", "title": "Hawkeye", "kind": "Serie", "when": "Navidad de ~2024", "rel": "2021", "meta": "1 temporada", "note": "Clint Barton y Kate Bishop; reaparece Kingpin.", "flag": false, "up": false}, {"id": 34, "era": "mul", "title": "Moon Knight", "kind": "Serie", "when": "~2025", "rel": "2022", "meta": "1 temporada", "note": "Marc Spector y Steven Grant, con mitología egipcia.", "flag": false, "up": false}, {"id": 35, "era": "mul", "title": "Ms. Marvel", "kind": "Serie", "when": "~2025", "rel": "2022", "meta": "1 temporada", "note": "Kamala Khan y sus poderes cósmicos.", "flag": false, "up": false}, {"id": 36, "era": "mul", "title": "Doctor Strange en el multiverso de la locura", "kind": "Película", "when": "~2025", "rel": "2022", "meta": "Dir.: Sam Raimi", "note": "Strange y Wanda en el Multiverso. Mejor ver antes WandaVision.", "flag": false, "up": false}, {"id": 37, "era": "mul", "title": "Thor: Love and Thunder", "kind": "Película", "when": "~2025", "rel": "2022", "meta": "Dir.: Taika Waititi", "note": "Thor, Jane Foster y Gorr.", "flag": false, "up": false}, {"id": 38, "era": "mul", "title": "She-Hulk: Abogada", "kind": "Serie", "when": "~2025", "rel": "2022", "meta": "1 temporada", "note": "Comedia legal con tono muy meta.", "flag": false, "up": false}, {"id": 39, "era": "mul", "title": "Werewolf by Night", "kind": "Especial", "when": "Sin fecha clara", "rel": "2022", "meta": "Dir.: Michael Giacchino", "note": "Especial de terror en blanco y negro. Se puede ver en cualquier punto.", "flag": true, "up": false}, {"id": 40, "era": "mul", "title": "Black Panther: Wakanda Forever", "kind": "Película", "when": "~2025", "rel": "2022", "meta": "Dir.: Ryan Coogler", "note": "Wakanda tras la pérdida de T'Challa; entra Namor.", "flag": false, "up": false}, {"id": 41, "era": "mul", "title": "Guardians of the Galaxy Holiday Special", "kind": "Especial", "when": "Sin fecha clara", "rel": "2022", "meta": "Dir.: James Gunn", "note": "Especial navideño de los Guardianes, corto y ligero.", "flag": true, "up": false}, {"id": 42, "era": "mul", "title": "Ant-Man y la Avispa: Quantumania", "kind": "Película", "when": "~2025-2026", "rel": "2023", "meta": "Dir.: Peyton Reed", "note": "Entra Kang y se abre la saga del Multiverso.", "flag": false, "up": false}, {"id": 43, "era": "mul", "title": "Secret Invasion", "kind": "Serie", "when": "~2026", "rel": "2023", "meta": "1 temporada", "note": "Skrulls infiltrados con Nick Fury.", "flag": false, "up": false}, {"id": 44, "era": "mul", "title": "Loki (temporada 2)", "kind": "Serie", "when": "Fuera del tiempo", "rel": "2023", "meta": "1 temporada", "note": "Continúa la historia de la AVT.", "flag": true, "up": false}, {"id": 45, "era": "mul", "title": "Guardianes de la Galaxia Vol. 3", "kind": "Película", "when": "~2026", "rel": "2023", "meta": "Dir.: James Gunn", "note": "Cierre de la historia de este equipo.", "flag": false, "up": false}, {"id": 46, "era": "mul", "title": "The Marvels", "kind": "Película", "when": "~2026", "rel": "2023", "meta": "Dir.: Nia DaCosta", "note": "Carol Danvers, Monica Rambeau y Kamala Khan.", "flag": false, "up": false}, {"id": 47, "era": "mul", "title": "Echo", "kind": "Serie", "when": "~2026", "rel": "2024", "meta": "1 temporada", "note": "Maya López y su conflicto con Kingpin.", "flag": false, "up": false}, {"id": 48, "era": "mul", "title": "Deadpool y Lobezno", "kind": "Película", "when": "~2026", "rel": "2024", "meta": "Dir.: Shawn Levy", "note": "Deadpool entra al UCM acompañado de Lobezno.", "flag": true, "up": false}, {"id": 49, "era": "mul", "title": "Agatha All Along", "kind": "Serie", "when": "~2026", "rel": "2024", "meta": "1 temporada", "note": "Spin-off de WandaVision centrado en la bruja Agatha.", "flag": false, "up": false}, {"id": 50, "era": "mul", "title": "Capitán América: Brave New World", "kind": "Película", "when": "~2026-2027", "rel": "2025", "meta": "Dir.: Julius Onah", "note": "Sam Wilson como nuevo Capitán América.", "flag": false, "up": false}, {"id": 51, "era": "mul", "title": "Thunderbolts*", "kind": "Película", "when": "~2026-2027", "rel": "2025", "meta": "Dir.: Jake Schreier", "note": "Un equipo de antihéroes y villanos reformados.", "flag": false, "up": false}, {"id": 52, "era": "mul", "title": "Ironheart", "kind": "Serie", "when": "~2026-2027", "rel": "2025", "meta": "1 temporada", "note": "Riri Williams combina tecnología y magia.", "flag": true, "up": false}, {"id": 53, "era": "mul", "title": "Daredevil: Born Again (temporada 1)", "kind": "Serie", "when": "~2026-2027", "rel": "2025", "meta": "1 temporada", "note": "Matt Murdock y Wilson Fisk; vuelve el tono del Daredevil de Netflix.", "flag": false, "up": false}, {"id": 54, "era": "hoy", "title": "Wonder Man", "kind": "Serie", "when": "Presente (~2027-2028)", "rel": "27 ene 2026", "meta": "1 temporada", "note": "Serie ambientada en el mundo de Hollywood del universo superheroico, con Yahya Abdul-Mateen II.", "flag": false, "up": false}, {"id": 55, "era": "hoy", "title": "Daredevil: Born Again (temporada 2)", "kind": "Serie", "when": "~2027", "rel": "Mar 2026", "meta": "Final: 5 may 2026", "note": "Continúa la historia donde acaba la temporada 1.", "flag": false, "up": false}, {"id": 56, "era": "hoy", "title": "The Punisher: One Last Kill", "kind": "Especial", "when": "~2027", "rel": "12 may 2026", "meta": "Dir.: Reinaldo Marcus Green", "note": "Especial de una hora (TV-MA) con Jon Bernthal. Llegó una semana después del final de Daredevil: Born Again 2.", "flag": false, "up": false}, {"id": 57, "era": "hoy", "title": "Spider-Man: Brand New Day", "kind": "Película", "when": "~2028 (4 años tras No Way Home)", "rel": "31 jul 2026", "meta": "Dir.: Destin Daniel Cretton", "note": "Peter Parker olvidado por todos. Primera aparición del Castigador en cine dentro del UCM.", "flag": false, "up": false}, {"id": 58, "era": "hoy", "title": "VisionQuest", "kind": "Serie", "when": "Incierto", "rel": "14 oct 2026", "meta": "Marvel Television", "note": "Cierra la trilogía de WandaVision y Agatha. Paul Bettany y James Spader (Ultron). Su ubicación temporal es incierta.", "flag": true, "up": true}, {"id": 59, "era": "hoy", "title": "Vengadores: Doomsday", "kind": "Película", "when": "Próximamente", "rel": "18 dic 2026", "meta": "Dir.: Anthony y Joe Russo", "note": "Gran reunión de héroes con Robert Downey Jr. confirmado en el reparto.", "flag": false, "up": true}, {"id": 60, "era": "hoy", "title": "Vengadores: Secret Wars", "kind": "Película", "when": "Próximamente", "rel": "17 dic 2027", "meta": "Dir.: Anthony y Joe Russo", "note": "Cierra la Saga del Multiverso.", "flag": false, "up": true}, {"id": 61, "era": "ext", "title": "X-Men: Primera generación", "kind": "Película", "when": "1962 (universo Fox)", "rel": "2011", "meta": "Dir.: Matthew Vaughn", "note": "Los orígenes de Charles Xavier y Erik Lehnsherr durante la crisis de los misiles.", "flag": true, "up": false}, {"id": 62, "era": "ext", "title": "X-Men Orígenes: Lobezno", "kind": "Película", "when": "1845-1979 (universo Fox)", "rel": "2009", "meta": "Dir.: Gavin Hood", "note": "El pasado de Logan. Su encaje cronológico es el más discutido de la saga.", "flag": true, "up": false}, {"id": 63, "era": "ext", "title": "X-Men: Días del futuro pasado", "kind": "Película", "when": "1973 y 2023 (universo Fox)", "rel": "2014", "meta": "Dir.: Bryan Singer", "note": "Une el reparto clásico con el de Primera generación. Es la película bisagra de la saga.", "flag": true, "up": false}, {"id": 64, "era": "ext", "title": "X-Men: Apocalipsis", "kind": "Película", "when": "1983 (universo Fox)", "rel": "2016", "meta": "Dir.: Bryan Singer", "note": "Los jóvenes mutantes frente al primer mutante de la historia.", "flag": true, "up": false}, {"id": 65, "era": "ext", "title": "X-Men: Fénix Oscura", "kind": "Película", "when": "1992 (universo Fox)", "rel": "2019", "meta": "Dir.: Simon Kinberg", "note": "Jean Grey y el poder del Fénix. Cierra la etapa de los jóvenes X-Men.", "flag": true, "up": false}, {"id": 66, "era": "ext", "title": "X-Men", "kind": "Película", "when": "Década de 2000 (universo Fox)", "rel": "2000", "meta": "Dir.: Bryan Singer", "note": "La película que abrió la saga con el reparto clásico.", "flag": true, "up": false}, {"id": 67, "era": "ext", "title": "X-Men 2", "kind": "Película", "when": "Década de 2000 (universo Fox)", "rel": "2003", "meta": "Dir.: Bryan Singer", "note": "Continuación directa; suele considerarse de lo mejor de la saga.", "flag": true, "up": false}, {"id": 68, "era": "ext", "title": "X-Men: La decisión final", "kind": "Película", "when": "Década de 2000 (universo Fox)", "rel": "2006", "meta": "Dir.: Brett Ratner", "note": "Cierra la trilogía original.", "flag": true, "up": false}, {"id": 69, "era": "ext", "title": "Lobezno inmortal", "kind": "Película", "when": "~2013 (universo Fox)", "rel": "2013", "meta": "Dir.: James Mangold", "note": "Logan en Japón tras los hechos de La decisión final.", "flag": true, "up": false}, {"id": 70, "era": "ext", "title": "Deadpool", "kind": "Película", "when": "Sin fecha clara (universo Fox)", "rel": "2016", "meta": "Dir.: Tim Miller", "note": "Origen de Deadpool. Lo necesitas para entender mejor Deadpool y Lobezno.", "flag": true, "up": false}, {"id": 71, "era": "ext", "title": "Deadpool 2", "kind": "Película", "when": "Sin fecha clara (universo Fox)", "rel": "2018", "meta": "Dir.: David Leitch", "note": "Continuación con la aparición de Cable y X-Force.", "flag": true, "up": false}, {"id": 72, "era": "ext", "title": "Logan", "kind": "Película", "when": "2029 (universo Fox)", "rel": "2017", "meta": "Dir.: James Mangold", "note": "El último capítulo de Lobezno en el universo Fox.", "flag": true, "up": false}, {"id": 73, "era": "ext", "title": "X-Men '97", "kind": "Serie animada", "when": "Continúa la serie animada de los 90", "rel": "2024", "meta": "Disney+", "note": "Serie animada que retoma la de los años 90. Mundo propio, separado del UCM de acción real.", "flag": true, "up": false}, {"id": 74, "era": "ext", "title": "Spider-Man (Sam Raimi)", "kind": "Película", "when": "Universo Raimi", "rel": "2002", "meta": "Dir.: Sam Raimi · Tobey Maguire", "note": "Primera de la trilogía de Raimi. Maguire reaparece en No Way Home.", "flag": false, "up": false}, {"id": 75, "era": "ext", "title": "Spider-Man 2", "kind": "Película", "when": "Universo Raimi", "rel": "2004", "meta": "Dir.: Sam Raimi", "note": "Muy valorada. Su Doctor Octopus también vuelve en No Way Home.", "flag": false, "up": false}, {"id": 76, "era": "ext", "title": "Spider-Man 3", "kind": "Película", "when": "Universo Raimi", "rel": "2007", "meta": "Dir.: Sam Raimi", "note": "Cierra la trilogía con Sandman y Venom.", "flag": false, "up": false}, {"id": 77, "era": "ext", "title": "The Amazing Spider-Man", "kind": "Película", "when": "Universo Webb", "rel": "2012", "meta": "Dir.: Marc Webb · Andrew Garfield", "note": "Reinicio con Andrew Garfield, que reaparece en No Way Home.", "flag": false, "up": false}, {"id": 78, "era": "ext", "title": "The Amazing Spider-Man 2: El poder de Electro", "kind": "Película", "when": "Universo Webb", "rel": "2014", "meta": "Dir.: Marc Webb", "note": "Cierra esa etapa de Spider-Man.", "flag": false, "up": false}, {"id": 79, "era": "ext", "title": "Spider-Man: Un nuevo universo", "kind": "Película", "when": "Multiverso animado", "rel": "2018", "meta": "Animación", "note": "Miles Morales y otros Spider-Man de distintas realidades.", "flag": false, "up": false}, {"id": 80, "era": "ext", "title": "Spider-Man: Cruzando el multiverso", "kind": "Película", "when": "Multiverso animado", "rel": "2023", "meta": "Animación", "note": "Continuación animada. La tercera parte, Beyond the Spider-Verse, no tiene fecha confirmada en mis fuentes.", "flag": false, "up": false}, {"id": 81, "era": "ext", "title": "Universo Sony: Venom, Morbius, Madame Web y Kraven", "kind": "Película", "when": "Universo Sony (varias películas)", "rel": "2018-2024", "meta": "Venom (2018), Habrá matanza (2021), Morbius (2022), Madame Web y Kraven (2024), El último baile (2024)", "note": "Casi independientes del UCM. Totalmente opcionales.", "flag": true, "up": false}]};
+const ERAS = DATA.eras, ITEMS = DATA.items;
+const KEY = "ucm-maraton-v1";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- estado ---------- */
+let seen = new Set();
+try { seen = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch(e){}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify([...seen])); } catch(e){} };
+const filt = { q:"", status:"all", kind:"all", era:"all" };
+
+/* ---------- emblemas animados originales ---------- */
+function emblem(i){
+  const v = i % 6, d = (5 + (i % 5) * 1.6).toFixed(1), hr = ((i * 13) % 50) - 25;
+  const st = `style="--d:${d}s;--hr:${hr}deg"`;
+  let g = "";
+  if (v === 0) g = `<circle cx="50" cy="50" r="12" fill="currentColor" class="bt"/>
+    <circle cx="50" cy="50" r="26" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width="1.5"/>
+    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="1.5"/>
+    <g class="sp"><circle cx="50" cy="24" r="5" fill="currentColor"/></g>
+    <g class="rv"><circle cx="50" cy="8" r="4" fill="currentColor"/><circle cx="50" cy="92" r="3" fill="currentColor" fill-opacity=".6"/></g>`;
+  else if (v === 1) g = `<circle class="pl" cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="3"/>
+    <circle class="pl" cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="3"/>
+    <circle class="pl" cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="3"/>
+    <circle cx="50" cy="50" r="9" fill="currentColor" class="bt"/>`;
+  else if (v === 2) g = `<g class="sp"><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="currentColor" stroke-width="3"/></g>
+    <g class="rv"><polygon points="50,22 74,36 74,64 50,78 26,64 26,36" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2"/></g>
+    <circle cx="50" cy="50" r="7" fill="currentColor" class="bt"/>`;
+  else if (v === 3) { let l = ""; for (let a = 0; a < 360; a += 30) l += `<line x1="50" y1="${a % 60 ? 16 : 8}" x2="50" y2="30" stroke="currentColor" stroke-width="3" stroke-linecap="round" transform="rotate(${a} 50 50)"/>`;
+    g = `<g class="sp">${l}</g><circle cx="50" cy="50" r="14" fill="none" stroke="currentColor" stroke-width="3" class="bt"/><circle cx="50" cy="50" r="4" fill="currentColor"/>`; }
+  else if (v === 4) g = `<path class="dash" d="M4 50 Q 21 20 38 50 T 72 50 T 96 50" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <path class="dash" d="M4 62 Q 21 36 38 62 T 72 62 T 96 62" fill="none" stroke="currentColor" stroke-width="2.5" stroke-opacity=".6" stroke-linecap="round"/>
+    <path class="dash" d="M4 38 Q 21 12 38 38 T 72 38 T 96 38" fill="none" stroke="currentColor" stroke-width="2.5" stroke-opacity=".6" stroke-linecap="round"/>`;
+  else g = `<g class="sp"><polygon points="50,8 90,78 10,78" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></g>
+    <g class="rv"><polygon points="50,92 10,22 90,22" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/></g>
+    <circle cx="50" cy="50" r="6" fill="currentColor" class="bt"/>`;
+  return `<svg class="emb" viewBox="0 0 100 100" ${st} aria-hidden="true">${g}</svg>`;
+}
+
+/* ---------- render ---------- */
+const main = $("#main");
+const flagSvg = '<svg viewBox="0 0 12 12" fill="currentColor"><path d="M2 1v10h1.2V7.2L10 5.6 3.2 4z"/></svg>';
+const tickSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" stroke-width="1.8"/><path class="tick" d="M7.5 12.5l3 3 6-6.5"/></svg>';
+const eraKeys = Object.keys(ERAS);
+eraKeys.forEach(k => {
+  const e = ERAS[k], list = ITEMS.filter(x => x.era === k);
+  const sec = document.createElement("section");
+  sec.className = "era"; sec.dataset.era = k; sec.id = "era-" + k;
+  sec.innerHTML = `<div class="era-head"><div><h2>${e.name}</h2><p>${e.sub}</p></div>
+    <div class="era-ctrl"><span class="ecount" style="font:800 28px var(--display);color:var(--c)"></span><button class="mini" data-act="all">Marcar saga</button></div>
+    <div class="ebar"><i></i></div></div>
+    <div class="grid">${list.map((it, j) => `
+    <article class="card" data-id="${it.id}" data-kind="${it.kind}" style="--k:${j}">
+      <span class="num">${String(it.id).padStart(2, "0")}</span>
+      <div class="top">${emblem(it.id)}<div class="ttl"><div class="tag">${it.kind}${it.up ? '<span class="up">Próximo</span>' : ""}</div><h3>${it.title}</h3></div></div>
+      <dl><dt>En el UCM</dt><dd>${it.when}</dd><dt>Estreno</dt><dd>${it.rel}</dd><dt>Datos</dt><dd>${it.meta}</dd></dl>
+      <p class="note">${it.note}</p>
+      ${it.flag ? `<span class="flag">${flagSvg} Posición orientativa</span>` : ""}
+      <button class="watch" aria-pressed="false">${tickSvg}<span class="wl">Marcar como visto</span></button>
+    </article>`).join("")}</div>`;
+  main.insertBefore(sec, $("#empty"));
+});
+$("#sTotal").textContent = ITEMS.length;
+$("#fEra").innerHTML = `<button class="chip" data-v="all" aria-pressed="true">Todas las sagas</button>` +
+  eraKeys.map(k => `<button class="chip era-chip" data-v="${k}" aria-pressed="false" style="--c:var(--${k})">${ERAS[k].name.replace("SAGA DEL ","").replace("AHORA Y LO QUE VIENE","Ahora y próximo").replace("FUERA DEL UCM, PERO CONECTADAS","X-Men y otros Spider-Man")}</button>`).join("");
+
+/* ---------- actualizar ---------- */
+const C = 2 * Math.PI * 54;
+const tw = new WeakMap();
+function countTo(el, to){
+  const from = +el.textContent || 0; if (from === to) return;
+  if (reduce) { el.textContent = to; return; }
+  const t0 = performance.now(), dur = 600;
+  (function f(t){ const p = Math.min(1, (t - t0) / dur); el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(f); })(t0);
+}
+function refresh(){
+  const n = seen.size, total = ITEMS.length, p = Math.round(n / total * 100);
+  countTo($("#sSeen"), n); countTo($("#sLeft"), total - n); countTo($("#pct"), p);
+  $("#ringBar").style.strokeDashoffset = C * (1 - n / total);
+  $("#cAll").textContent = total; $("#cLeft").textContent = total - n; $("#cSeen").textContent = n;
+  $$(".card").forEach(c => {
+    const on = seen.has(+c.dataset.id);
+    c.classList.toggle("seen", on);
+    const b = $(".watch", c); b.setAttribute("aria-pressed", on); $(".wl", b).textContent = on ? "Visto" : "Marcar como visto";
+  });
+  eraKeys.forEach(k => {
+    const list = ITEMS.filter(x => x.era === k), s = list.filter(x => seen.has(x.id)).length, sec = $("#era-" + k);
+    $(".ebar i", sec).style.width = (s / list.length * 100) + "%";
+    $(".ecount", sec).textContent = s + "/" + list.length;
+    $(".mini", sec).textContent = s === list.length ? "Desmarcar saga" : "Marcar saga";
+  });
+  applyFilters();
+}
+function applyFilters(){
+  let shown = 0; const q = filt.q.trim().toLowerCase();
+  $$(".card").forEach(c => {
+    const it = ITEMS[+c.dataset.id - 1], on = seen.has(it.id);
+    const ok = (filt.status === "all" || (filt.status === "seen" ? on : !on))
+      && (filt.kind === "all" || (filt.kind === "Película" ? it.kind === "Película" : it.kind !== "Película"))
+      && (filt.era === "all" || it.era === filt.era)
+      && (!q || (it.title + " " + it.note + " " + it.when + " " + it.kind).toLowerCase().includes(q));
+    c.hidden = !ok; if (ok) shown++;
+  });
+  $$(".era").forEach(s => { s.hidden = !$$(".card:not([hidden])", s).length; });
+  $("#empty").classList.toggle("on", !shown);
+}
+
+/* ---------- interacciones ---------- */
+function toast(t){ const el = $("#toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove("on"), 2600); }
+function eraDone(k){ return ITEMS.filter(x => x.era === k).every(x => seen.has(x.id)); }
+main.addEventListener("click", e => {
+  const b = e.target.closest(".watch");
+  if (b){
+    const id = +b.closest(".card").dataset.id, it = ITEMS[id - 1], before = eraDone(it.era), all0 = seen.size === ITEMS.length;
+    if (seen.has(id)) seen.delete(id); else seen.add(id);
+    const r = b.getBoundingClientRect(), rip = document.createElement("span"); rip.className = "rip";
+    rip.style.left = (e.clientX - r.left || r.width / 2) + "px"; rip.style.top = (e.clientY - r.top || r.height / 2) + "px"; b.append(rip); setTimeout(() => rip.remove(), 700);
+    save(); refresh();
+    if (seen.has(id)) {
+      const col = getComputedStyle(b).getPropertyValue("--c").trim() || "#fff";
+      burst(r.left + r.width / 2, r.top, 18, [col]);
+      if (!before && eraDone(it.era)) { toast("Saga completada: " + ERAS[it.era].name); confetti(); }
+      if (!all0 && seen.size === ITEMS.length) { toast("Lo has visto todo. Enhorabuena."); confetti(true); }
+    }
+    return;
+  }
+  const m = e.target.closest(".mini");
+  if (m){
+    const k = m.closest(".era").dataset.era, list = ITEMS.filter(x => x.era === k), done = eraDone(k);
+    list.forEach(x => done ? seen.delete(x.id) : seen.add(x.id));
+    save(); refresh(); if (!done) { toast("Saga marcada como vista"); confetti(); }
+  }
+});
+function bindChips(id, key){
+  $(id).addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    $$(".chip", $(id)).forEach(x => x.setAttribute("aria-pressed", x === b)); filt[key] = b.dataset.v; applyFilters();
+  });
+}
+bindChips("#fStatus", "status"); bindChips("#fKind", "kind"); bindChips("#fEra", "era");
+$("#fKind").querySelector('[data-v="serie"]').dataset.v = "serie";
+$("#q").addEventListener("input", e => { filt.q = e.target.value; applyFilters(); });
+addEventListener("keydown", e => { if (e.key === "/" && document.activeElement.tagName !== "INPUT") { e.preventDefault(); $("#q").focus(); } });
+
+$("#next").addEventListener("click", () => {
+  const it = ITEMS.find(x => !seen.has(x.id));
+  if (!it){ toast("No te queda nada por ver"); confetti(true); return; }
+  filt.q = ""; filt.status = "all"; filt.kind = "all"; filt.era = "all"; $("#q").value = "";
+  ["#fStatus", "#fKind", "#fEra"].forEach(id => $$(".chip", $(id)).forEach((x, i) => x.setAttribute("aria-pressed", i === 0)));
+  applyFilters();
+  const c = $(`.card[data-id="${it.id}"]`); c.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  c.classList.remove("ping"); void c.offsetWidth; c.classList.add("ping"); setTimeout(() => c.classList.remove("ping"), 3000);
+});
+
+/* tema */
+const root = document.documentElement;
+try { const t = localStorage.getItem("ucm-theme"); if (t) root.dataset.theme = t; } catch(e){}
+$("#theme").addEventListener("click", () => {
+  const dark = (root.dataset.theme || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")) === "dark";
+  root.dataset.theme = dark ? "light" : "dark"; try { localStorage.setItem("ucm-theme", root.dataset.theme); } catch(e){}
+});
+/* exportar / importar / reiniciar */
+$("#exp").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ app: "maraton-ucm", visto: [...seen].sort((a, b) => a - b) })], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "progreso-ucm.json"; document.body.append(a); a.click(); a.remove(); toast("Progreso exportado");
+});
+$("#imp").addEventListener("click", () => $("#file").click());
+$("#file").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const j = JSON.parse(await f.text()); const v = (j.visto || []).filter(n => Number.isInteger(n) && n >= 1 && n <= ITEMS.length); seen = new Set(v); save(); refresh(); toast("Progreso importado: " + v.length + " vistos"); }
+  catch(err){ toast("No he podido leer ese archivo"); }
+  e.target.value = "";
+});
+$("#reset").addEventListener("click", e => {
+  const b = e.currentTarget;
+  if (b.dataset.arm){ seen.clear(); save(); refresh(); b.textContent = "Reiniciar"; delete b.dataset.arm; toast("Progreso reiniciado"); return; }
+  b.dataset.arm = 1; b.textContent = "¿Seguro? Pulsa otra vez"; setTimeout(() => { b.textContent = "Reiniciar"; delete b.dataset.arm; }, 3500);
+});
+
+/* inclinación 3D y brillo que sigue al ratón */
+if (!reduce && matchMedia("(hover:hover)").matches){
+  main.addEventListener("pointermove", e => {
+    const c = e.target.closest(".card"); if (!c) return;
+    const r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+    c.style.setProperty("--ry", ((x - .5) * 7).toFixed(2) + "deg"); c.style.setProperty("--rx", ((.5 - y) * 7).toFixed(2) + "deg");
+    c.style.setProperty("--mx", (x * 100) + "%"); c.style.setProperty("--my", (y * 100) + "%");
+  });
+  main.addEventListener("pointerout", e => { const c = e.target.closest(".card"); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty("--rx", "0deg"); c.style.setProperty("--ry", "0deg"); } });
+}
+
+/* barra de scroll */
+const sb = $("#scrollbar");
+addEventListener("scroll", () => { const h = document.documentElement.scrollHeight - innerHeight; sb.style.transform = `scaleX(${h > 0 ? scrollY / h : 0})`; }, { passive: true });
+
+/* confeti */
+const fx = $("#fx"), fc = fx.getContext("2d"); let parts = [], raf = 0;
+function sizeFx(){ fx.width = innerWidth * devicePixelRatio; fx.height = innerHeight * devicePixelRatio; }
+sizeFx(); addEventListener("resize", sizeFx);
+const PAL = ["#f2b134", "#ef5346", "#9a6bff", "#1fd1bd", "#ffffff"];
+function burst(x, y, n, cols){ if (reduce) return;
+  for (let i = 0; i < n; i++){ const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 4.5;
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, g: .14, w: 4 + Math.random() * 5, h: 3 + Math.random() * 4, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: (cols || PAL)[i % (cols || PAL).length], life: 70 + Math.random() * 40 }); }
+  if (!raf) raf = requestAnimationFrame(loopFx);
+}
+function confetti(big){ if (reduce) return; const n = big ? 5 : 2;
+  for (let i = 0; i < n; i++) setTimeout(() => burst(innerWidth * (.2 + Math.random() * .6), innerHeight * .35, big ? 90 : 60), i * 160); }
+function loopFx(){
+  fc.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0); fc.clearRect(0, 0, innerWidth, innerHeight);
+  parts = parts.filter(p => p.life > 0);
+  parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += p.g; p.r += p.vr; p.life--; fc.save(); fc.translate(p.x, p.y); fc.rotate(p.r); fc.globalAlpha = Math.min(1, p.life / 25); fc.fillStyle = p.c; fc.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); fc.restore(); });
+  raf = parts.length ? requestAnimationFrame(loopFx) : 0; if (!parts.length) fc.clearRect(0, 0, innerWidth, innerHeight);
+}
+
+/* fondo del hero: partículas que se enlazan */
+(function(){
+  const cv = $("#bg"), cx = cv.getContext("2d"), hero = $(".hero"); let w, h, pts = [], run = true;
+  const cols = ["#f2b134", "#ef5346", "#9a6bff", "#1fd1bd"];
+  function size(){ w = hero.clientWidth; h = hero.clientHeight; cv.width = w * devicePixelRatio; cv.height = h * devicePixelRatio; cx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    const n = Math.round(Math.min(90, w * h / 14000)); pts = Array.from({ length: n }, (_, i) => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35, r: 1.4 + Math.random() * 2.2, c: cols[i % 4] })); }
+  size(); addEventListener("resize", size);
+  let mx = -999, my = -999; hero.addEventListener("pointermove", e => { const r = hero.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; });
+  hero.addEventListener("pointerleave", () => { mx = my = -999; });
+  function draw(){
+    if (!run) return; cx.clearRect(0, 0, w, h);
+    pts.forEach((p, i) => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > w) p.vx *= -1; if (p.y < 0 || p.y > h) p.vy *= -1;
+      const dx = p.x - mx, dy = p.y - my, d = Math.hypot(dx, dy); if (d < 110){ p.x += dx / d * 1.4; p.y += dy / d * 1.4; }
+      cx.globalAlpha = .75; cx.fillStyle = p.c; cx.beginPath(); cx.arc(p.x, p.y, p.r, 0, 7); cx.fill();
+      for (let j = i + 1; j < pts.length; j++){ const q = pts[j], dd = Math.hypot(p.x - q.x, p.y - q.y); if (dd < 120){ cx.globalAlpha = (1 - dd / 120) * .28; cx.strokeStyle = p.c; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(p.x, p.y); cx.lineTo(q.x, q.y); cx.stroke(); } } });
+    requestAnimationFrame(draw);
+  }
+  if (reduce) { run = true; draw(); run = false; return; }
+  new IntersectionObserver(es => { const on = es[0].isIntersecting; if (on && !run){ run = true; draw(); } run = on; }).observe(hero);
+  draw();
+})();
+
+refresh();
+</script>
+</body>
+</html>
